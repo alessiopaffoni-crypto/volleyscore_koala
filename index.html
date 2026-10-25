@@ -304,6 +304,16 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 .team,.timeout,footer button{touch-action:manipulation}
 .team .points{user-select:none;-webkit-user-select:none}
 
+
+/* KOALA Music: controls distinct from score touch zones */
+.music-bar{position:relative;z-index:2;display:flex;justify-content:center;align-items:center;gap:7px;min-height:32px;padding:2px 8px;background:#061530;border-top:1px solid #e3bc30}
+.music-bar button{background:#102c63;color:#fff;border:1px solid #ffe018;border-radius:8px;min-width:38px;min-height:31px;font-size:16px;font-weight:800;cursor:pointer}
+.music-bar #musicPlay{background:#ffe018;color:#061530;min-width:48px}
+.music-bar #musicTitle{max-width:22vw;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;color:#fff}
+.music-bar input{display:none}
+#board{grid-template-rows:minmax(40px,6vh) minmax(0,1fr) minmax(58px,9vh) auto!important}
+@media (orientation:portrait) and (max-width:900px){#board{display:flex!important;flex-direction:column!important}.music-bar{min-height:46px}.music-bar #musicTitle{max-width:32vw}}
+@media (orientation:landscape) and (max-height:530px){#board{grid-template-rows:44px minmax(0,1fr) auto auto!important}}
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -360,6 +370,15 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
     <button id="new">NUOVA PARTITA</button>
     <button id="full">⛶ SCHERMO INTERO</button>
   </footer>
+<section class="music-bar" aria-label="Lettore musicale locale">
+<button type="button" id="musicLoad" title="Seleziona file MP3 dal tablet">♫ MP3</button>
+<input id="musicFiles" type="file" accept="audio/*,.mp3,.m4a,.ogg,.wav" multiple aria-label="Seleziona brani">
+<button type="button" id="musicPrev" title="Brano precedente" aria-label="Brano precedente">⏮</button>
+<button type="button" id="musicPlay" title="Play / Pausa" aria-label="Riproduci o metti in pausa">▶</button>
+<button type="button" id="musicNext" title="Brano successivo" aria-label="Brano successivo">⏭</button>
+<span id="musicTitle" aria-live="polite">Scegli MP3</span>
+<audio id="koalaAudio" preload="none"></audio>
+</section>
 </div>
 
 <div id="victory" class="hidden" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
@@ -691,6 +710,33 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline non disponibile:', err));
   });
 }
+</script>
+<script>
+/* Lettore locale: i file selezionati rimangono sul dispositivo, senza upload */
+(()=>{
+  const $=id=>document.getElementById(id);
+  const audio=$('koalaAudio');let urls=[],names=[],idx=0;
+  const release=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[];names=[];idx=0};
+  const draw=()=>{ $('musicPlay').textContent=audio.paused?'▶':'❚❚';
+    $('musicTitle').textContent=names[idx]||'Scegli MP3'; };
+  const openTrack=(n,autoplay)=>{if(!urls.length)return;idx=(n+urls.length)%urls.length;
+    audio.src=urls[idx];audio.load();draw();if(autoplay)audio.play().catch(()=>draw());};
+  $('musicLoad').addEventListener('click',()=>$('musicFiles').click());
+  $('musicFiles').addEventListener('change',e=>{const files=[...e.target.files].filter(f=>f.type.startsWith('audio/')||/\.(mp3|m4a|ogg|wav)$/i.test(f.name));
+    audio.pause();audio.removeAttribute('src');audio.load();release();
+    urls=files.map(f=>URL.createObjectURL(f));names=files.map(f=>f.name.replace(/\.[^.]+$/,''));
+    if(urls.length)openTrack(0,false);else draw();
+    e.target.value='';
+  });
+  $('musicPlay').addEventListener('click',()=>{if(!urls.length){$('musicFiles').click();return;}
+    if(audio.paused)audio.play().catch(()=>draw());else audio.pause();draw();});
+  $('musicPrev').addEventListener('click',()=>openTrack(idx-1,!audio.paused));
+  $('musicNext').addEventListener('click',()=>openTrack(idx+1,!audio.paused));
+  audio.addEventListener('ended',()=>openTrack(idx+1,true));
+  audio.addEventListener('play',draw);audio.addEventListener('pause',draw);
+  window.addEventListener('pagehide',()=>{audio.pause();release()});
+  draw();
+})();
 </script>
 </body>
 </html>
