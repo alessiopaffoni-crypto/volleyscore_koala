@@ -9,3 +9,5 @@ Il lettore integrato NON controlla VLC. I brani NON vengono caricati su Internet
 In genere i brani devono essere selezionati di nuovo se chiudi o ricarichi la pagina: l'autorizzazione ai file non rimane salvata.
 Il tabellone può restare offline una volta che la PWA è stata aperta e memorizzata online.
 Per verificare l'aggiornamento, chiudi e riapri completamente l'app dopo l'upload.
+
+V15: TIME OUT a schermo per 10 secondi e musica avviata dal timeout.
