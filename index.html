@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VolleyScore KOALA V9 – Match Day</title>
+<title>VolleyScore KOALA – Offline</title>
 <style>
 :root{
   --bg:#03163c;
@@ -305,6 +305,13 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 .team .points{user-select:none;-webkit-user-select:none}
 
 </style>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#071b44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KOALA Score">
+<link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
 <div id="watermark" aria-hidden="true">
@@ -677,6 +684,13 @@ document.addEventListener('click',e=>{
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{fitAllNames();fitPointNumbers()}));
 draw();
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline non disponibile:', err));
+  });
+}
 </script>
 </body>
 </html>

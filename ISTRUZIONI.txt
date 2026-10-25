@@ -1,0 +1,18 @@
+VOLLEYSCORE KOALA — INSTALLAZIONE PWA OFFLINE
+
+1. Apri il repository: https://github.com/alessiopaffoni-crypto/volleyscore_koala
+2. Carica nella radice della branch main i CINQUE file index.html, sw.js, manifest.webmanifest, icon-192.png e icon-512.png.
+   Usa Add file > Upload files > Commit changes; sostituisci index.html se esiste.
+   Non caricare soltanto lo ZIP: va estratto prima.
+3. Vai in Settings > Pages e assicurati che la pubblicazione sia da main / (root).
+4. Apri online https://alessiopaffoni-crypto.github.io/volleyscore_koala/
+5. iPhone: in Safari premi Condividi > Aggiungi alla schermata Home.
+   Samsung: in Chrome o Samsung Internet scegli Installa app / Aggiungi alla schermata Home.
+6. Apri UNA VOLTA online dall'icona e attendi il caricamento della pagina.
+7. Attiva modalità aereo e PROVA a chiudere e riaprire l'app. Se non si apre,
+   torna online, apri nuovamente l'app e riprova.
+
+La cache offline può essere eliminata dal sistema in caso di spazio ridotto
+oppure dopo la cancellazione dei dati del browser. Non cancellare i dati del sito.
+I risultati sono salvati solo sul dispositivo usato, non sincronizzati.
+Un aggiornamento dell'app potrebbe richiedere una connessione e una riapertura.
