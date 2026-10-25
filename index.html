@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VolleyScore KOALA – Offline</title>
+<title>VolleyScore KOALA – Timeout Musicali | – Offline</title>
 <style>
 :root{
   --bg:#03163c;
@@ -314,6 +314,25 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 #board{grid-template-rows:minmax(40px,6vh) minmax(0,1fr) minmax(58px,9vh) auto!important}
 @media (orientation:portrait) and (max-width:900px){#board{display:flex!important;flex-direction:column!important}.music-bar{min-height:46px}.music-bar #musicTitle{max-width:32vw}}
 @media (orientation:landscape) and (max-height:530px){#board{grid-template-rows:44px minmax(0,1fr) auto auto!important}}
+
+/* V14: timeout visibili e separati dal punteggio, senza modificare l'altezza delle caselle */
+.timeout-panel{gap:12px;padding:4px 8px;}
+.to-list{gap:clamp(12px,2vw,25px);}
+.timeout{width:clamp(76px,8vw,136px);height:clamp(46px,7vh,68px);border-radius:12px;border-width:3px;font-size:clamp(26px,3vw,42px);}
+.timeout.used{background:#e10018;color:#fff;border-color:#ffe100;box-shadow:0 0 0 2px #fff8,0 0 20px #e10018aa;}
+@media (orientation:portrait) and (max-width:900px){
+  .timeout{width:clamp(78px,24vw,120px);height:46px;font-size:27px;}
+  .to-list{gap:12px;}
+}
+@media (orientation:landscape) and (max-height:600px){
+ .timeout{width:clamp(60px,8vw,110px);height:clamp(36px,8vh,50px);font-size:clamp(19px,3.7vh,29px)}
+}
+/* Schermata speciale soltanto in caso di vittoria di S.A. KOALA */
+#victory.koala-wins{background:radial-gradient(circle at 50% 38%,#173a82 0%,#061b42 72%);}
+#victory.koala-wins .victory-card{border-color:#ffe100;background:repeating-linear-gradient(135deg,transparent 0 26px,#ffffff07 26px 33px),linear-gradient(145deg,#0a2459,#09204a);box-shadow:0 0 75px #ffdd0070;}
+#victory.koala-wins .victory-title{color:#ffe100;font-size:clamp(38px,6vw,100px);}
+#victory.koala-wins .victory-name{color:#ffe100!important;}
+#victory.koala-wins .victory-sub{color:#ffe100;}
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -383,9 +402,9 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 
 <div id="victory" class="hidden" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
   <div class="victory-card">
-    <div class="victory-title" id="victoryTitle">COMPLIMENTI!</div>
+    <div class="victory-title" id="victoryTitle">VINCE</div>
     <div class="victory-name" id="victoryName"></div>
-    <div class="victory-sub">HAI VINTO LA PARTITA! 🏆</div>
+    <div class="victory-sub" id="victorySub"></div>
     <div id="victoryHistory"></div>
     <button type="button" class="victory-close" id="victoryClose">TORNA AL TABELLONE</button>
   </div>
@@ -575,6 +594,10 @@ function completeSet(winnerIndex){
   state.sets[winnerIndex]++;
   if(state.sets[winnerIndex]===3){
     state.finished=true;
+    const isKoala=!!state.teams[winnerIndex].koala;
+    $('victory').classList.toggle('koala-wins',isKoala);
+    $('victoryTitle').textContent=isKoala?'🏆 VINCE S.A. KOALA! 🐨':'VINCE';
+    $('victorySub').textContent=isKoala?'🎉 FORZA KOALA! 🎉':'';
     $('victoryName').textContent=state.teams[winnerIndex].name;
     $('victoryName').style.color=state.teams[winnerIndex].color;
     $('victory').classList.remove('hidden');
@@ -615,6 +638,9 @@ function toggleTimeoutForSide(sideName, slot){
   const current=state.timeouts[teamIndex]||0;
   state.timeouts[teamIndex]=(slot < current) ? slot : slot+1;
   draw();
+  if(state.timeouts[teamIndex]>current){
+    document.dispatchEvent(new CustomEvent('koala-timeout-music',{detail:{action:'play'}}));
+  }
 }
 
 $('nextSet').addEventListener('click',()=>{
@@ -730,6 +756,10 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
   });
   $('musicPlay').addEventListener('click',()=>{if(!urls.length){$('musicFiles').click();return;}
     if(audio.paused)audio.play().catch(()=>draw());else audio.pause();draw();});
+  document.addEventListener('koala-timeout-music',()=>{
+    if(!urls.length){$('musicFiles').click();return;}
+    if(audio.paused){ audio.play().catch(()=>draw()); }
+  });
   $('musicPrev').addEventListener('click',()=>openTrack(idx-1,!audio.paused));
   $('musicNext').addEventListener('click',()=>openTrack(idx+1,!audio.paused));
   audio.addEventListener('ended',()=>openTrack(idx+1,true));
