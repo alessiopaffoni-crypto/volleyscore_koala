@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VolleyScore KOALA – Timeout Musicali | – Offline</title>
+<title>VolleyScore KOALA – Volley Arena V17 | Offline</title>
 <style>
 :root{
   --bg:#03163c;
@@ -382,6 +382,32 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
     font-size:clamp(27px,7vh,46px);border-width:3px;bottom:5px}
 }
 
+
+/* V17 — intermezzo Volley Arena, tutto locale e chiudibile con un tocco */
+#intermezzo[hidden]{display:none!important}
+#intermezzo{position:fixed;inset:0;z-index:40;overflow:hidden;isolation:isolate;cursor:pointer;
+  background:radial-gradient(ellipse at 50% 80%,#2a5cbf88 0%,transparent 55%),linear-gradient(125deg,#041236,#123783 48%,#871e89 83%,#220f41);color:white;
+  display:flex;flex-direction:column;align-items:center;justify-content:space-around;text-align:center;padding:clamp(14px,3vh,38px) 5vw;}
+#intermezzo:before{content:'';position:absolute;inset:-60%;z-index:-1;opacity:.2;
+  background:repeating-conic-gradient(from 12deg,#fff 0 2deg,transparent 2deg 23deg);animation:arenaRays 40s linear infinite}
+@keyframes arenaRays{to{transform:rotate(360deg)}}
+#intermezzo .arena-heading{font-size:clamp(24px,4.7vw,76px);font-weight:1000;letter-spacing:.06em;color:#ffe130;text-shadow:0 5px 20px #001}
+#intermezzo .arena-score{font-size:clamp(24px,4vw,60px);font-weight:900;line-height:1.2;max-width:94vw;overflow-wrap:anywhere;text-shadow:0 5px 14px #001}
+#intermezzo .arena-set{font-size:clamp(17px,2.5vw,36px);font-weight:850;color:#f4f6ff}
+#intermezzo .arena-counter{font-size:clamp(16px,2.1vw,28px);font-weight:800;color:#ffe130}
+#intermezzo .arena-hint{font-size:clamp(13px,1.5vw,22px);opacity:.9}
+.arena-scene{height:min(35vh,290px);width:min(90vw,1000px);position:relative;perspective:800px}
+.arena-net{position:absolute;left:14%;right:14%;bottom:0;height:66%;border:6px solid #cbefff;border-top:11px solid #ffe130;
+ background:repeating-linear-gradient(90deg,transparent 0 28px,#ffffff80 29px 31px),repeating-linear-gradient(0deg,transparent 0 27px,#ffffff80 28px 30px);
+ box-shadow:0 0 27px #54dfff77;transform:skewX(-6deg)}
+.arena-ball{position:absolute;width:clamp(68px,11vw,156px);height:clamp(68px,11vw,156px);top:0;left:5%;border-radius:50%;z-index:2;
+ background:radial-gradient(circle at 32% 25%,#fff8d0,#ffdd2e 48%,#b85d18 92%);border:3px solid #ffef8f;box-shadow:0 10px 34px #000b,0 0 45px #ffe46699;
+ animation:arenaVolley 4.8s ease-in-out infinite}
+.arena-ball svg{width:100%;height:100%;animation:arenaSpin 4.8s linear infinite}
+@keyframes arenaVolley{0%{left:3%;top:52%;transform:scale(.75)}32%{top:-10%;transform:scale(1.12)}58%{left:78%;top:35%;transform:scale(.9)}78%{left:43%;top:-18%;transform:scale(1.12)}100%{left:3%;top:52%;transform:scale(.75)}}
+@keyframes arenaSpin{to{transform:rotate(720deg)}}
+@media(prefers-reduced-motion:reduce){#intermezzo:before,.arena-ball,.arena-ball svg{animation:none}}
+
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -432,6 +458,7 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
   </main>
 
   <footer>
+    <button id="replayArena" class="hidden" type="button">🏐 INTERVALLO</button>
     <button id="nextSet" class="hidden" type="button">▶ PROSSIMO SET</button>
     <button id="undo">↶ ANNULLA</button>
     <button id="swap">⇄ CAMBIO CAMPO</button>
@@ -448,6 +475,21 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 <span id="musicTitle" aria-live="polite">Scegli MP3</span>
 <audio id="koalaAudio" preload="none"></audio>
 </section>
+</div>
+
+
+<!-- V17: intermezzo locale tra i set, chiusura immediata con tocco -->
+<div id="intermezzo" hidden role="dialog" aria-modal="true" aria-label="Animazione fine set" tabindex="0">
+  <div class="arena-heading">🏐 SET TERMINATO</div>
+  <div class="arena-scene" aria-hidden="true"><div class="arena-net"></div>
+    <div class="arena-ball"><svg viewBox="0 0 100 100" fill="none" stroke="#16367e" stroke-width="5">
+      <circle cx="50" cy="50" r="43"/><path d="M50 8 C65 25 70 42 49 56 C30 68 35 84 50 92"/><path d="M10 38 C30 29 46 33 54 50 C62 69 78 65 90 59"/><path d="M26 16 C31 32 23 50 9 60 M72 18 C65 36 72 52 92 53"/>
+    </svg></div>
+  </div>
+  <div class="arena-set" id="arenaSet">SET 1</div>
+  <div class="arena-score" id="arenaScore"></div>
+  <div class="arena-counter" id="arenaCounter">02:30</div>
+  <div class="arena-hint">TOCCA LO SCHERMO PER TORNARE AL TABELLONE</div>
 </div>
 
 <div id="victory" class="hidden" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
@@ -623,6 +665,7 @@ function draw(){
 
   $('setLabel').textContent=state.finished ? 'PARTITA TERMINATA' : state.awaitingNextSet ? 'SET TERMINATO' : `SET ${state.set} / 5`;
   $('nextSet').classList.toggle('hidden',!state.awaitingNextSet);
+  $('replayArena').classList.toggle('hidden',!state.awaitingNextSet);
   $('setFinishedBanner').classList.add('hidden');
    
   if(!state.finished) $('victory').classList.add('hidden');
@@ -638,6 +681,31 @@ function snapshot(){
 }
 
 function resetTimeouts(){ state.timeouts=[0,0]; }
+
+// L'animazione dura 150 s; non modifica stato né avanza il set.
+let arenaTicker=null;
+let arenaDeadline=0;
+function closeArena(){
+  $('intermezzo').hidden=true;
+  if(arenaTicker!==null){clearInterval(arenaTicker);arenaTicker=null;}
+}
+function openArena(){
+  if(!state.awaitingNextSet||state.finished)return;
+  closeArena();
+  $('arenaSet').textContent=`SET ${state.set} TERMINATO`;
+  $('arenaScore').textContent=`${state.teams[0].name}  ${state.points[0]}  —  ${state.points[1]}  ${state.teams[1].name}`;
+  $('arenaCounter').textContent='02:30';
+  $('intermezzo').hidden=false;
+  arenaDeadline=Date.now()+150000;
+  arenaTicker=setInterval(()=>{
+    const remaining=Math.max(0,Math.ceil((arenaDeadline-Date.now())/1000));
+    $('arenaCounter').textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;
+    if(remaining===0)closeArena();
+  },250);
+}
+$('intermezzo').addEventListener('click',closeArena);
+$('intermezzo').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '||e.key==='Escape'){e.preventDefault();closeArena();}});
+$('replayArena').addEventListener('click',openArena);
 
 function completeSet(winnerIndex){
   state.completedSets.push([...state.points]);
@@ -656,6 +724,8 @@ function completeSet(winnerIndex){
   }
   state.awaitingNextSet=true;
   clearMsg();
+  openArena();
+  document.dispatchEvent(new CustomEvent('koala-timeout-music',{detail:{action:'play'}}));
 }
 
 function point(teamIndex){
@@ -707,6 +777,7 @@ function toggleTimeoutForSide(sideName, slot){
 
 $('nextSet').addEventListener('click',()=>{
   if(!state.awaitingNextSet||state.finished)return;
+  closeArena();
   snapshot();
   state.set++;state.points=[0,0];state.left=1-state.left;
   state.fifthSwapped=false;state.awaitingNextSet=false;resetTimeouts();
@@ -730,6 +801,7 @@ document.querySelectorAll('.timeout').forEach(el=>{
 $('victoryClose').addEventListener('click',()=>{$('victory').classList.add('hidden');clearMsg()});
 $('undo').addEventListener('click',()=>{
   if(!history.length)return;
+  closeArena();
   state=JSON.parse(history.pop());
   $('victory').classList.add('hidden');
   clearMsg();
@@ -743,6 +815,7 @@ $('swap').addEventListener('click',()=>{
 });
 $('new').addEventListener('click',()=>{
   if(confirm('Iniziare una nuova partita? I punteggi, i set e i timeout saranno azzerati.')){
+    closeArena();
     const teams=state.teams;
     state={...defaults(),teams};
     $('victory').classList.add('hidden');
