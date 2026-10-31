@@ -350,6 +350,38 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
  #timeoutAnnouncement{top:56px;width:96vw;font-size:clamp(26px,7vw,54px);padding:16px 12px}
 }
 
+
+/* V16 – numero di set in badge esterno, senza riga sotto il punteggio */
+.team,.team.koala-theme{
+  grid-template-rows:minmax(0,24%) minmax(0,1fr)!important;
+  grid-template-columns:minmax(0,1fr)!important;
+}
+.team .team-top{grid-row:1;grid-column:1;min-width:0}
+.team .points{grid-row:2;grid-column:1;min-width:0}
+.team .set-badge{
+  position:absolute;bottom:clamp(8px,1.25vh,18px);
+  width:clamp(58px,6.8vw,110px);height:clamp(58px,6.8vw,110px);
+  display:flex;justify-content:center;align-items:center;
+  border-radius:24%;border:4px solid #ffffff;
+  background:#071630;color:#fff;
+  font:900 clamp(36px,4.4vw,74px)/1 Arial,Helvetica,sans-serif;
+  box-shadow:0 7px 22px #0009;
+  z-index:5;pointer-events:none;
+  font-variant-numeric:tabular-nums;
+}
+#leftTeam .set-badge{left:clamp(8px,1.25vw,20px)}
+#rightTeam .set-badge{right:clamp(8px,1.25vw,20px)}
+.team.koala-theme .set-badge{background:#ffe01a;color:#061b42;border-color:#071a45}
+@media (orientation:portrait) and (max-width:900px){
+  .team,.team.koala-theme{grid-template-rows:minmax(0,24%) minmax(0,1fr)!important}
+  .team .set-badge{width:clamp(48px,13vw,74px);height:clamp(48px,13vw,74px);
+    font-size:clamp(28px,8vw,48px);border-width:3px;bottom:6px}
+}
+@media (orientation:landscape) and (max-height:600px){
+  .team .set-badge{width:clamp(42px,10vh,70px);height:clamp(42px,10vh,70px);
+    font-size:clamp(27px,7vh,46px);border-width:3px;bottom:5px}
+}
+
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -375,7 +407,7 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
       <button class="team" id="leftTeam" aria-label="Aggiungi punto alla squadra a sinistra">
         <div class="team-top"><div class="name"></div></div>
         <div class="points">0</div>
-        <div class="bottom-row sets"></div>
+        <span class="set-badge sets" aria-hidden="true">0</span>
       </button>
       <div class="timeout-panel" aria-label="Timeout squadra sinistra">
         <div class="to-list">
@@ -388,7 +420,7 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
       <button class="team" id="rightTeam" aria-label="Aggiungi punto alla squadra a destra">
         <div class="team-top"><div class="name"></div></div>
         <div class="points">0</div>
-        <div class="bottom-row sets"></div>
+        <span class="set-badge sets" aria-hidden="true">0</span>
       </button>
       <div class="timeout-panel" aria-label="Timeout squadra destra">
         <div class="to-list">
@@ -584,8 +616,8 @@ function draw(){
     el.closest('.team-column').classList.toggle('koala-column', !!team.koala);
     el.querySelector('.name').textContent=team.name;
     el.querySelector('.points').textContent=state.points[teamIndex];
-    el.querySelector('.sets').textContent='SET VINTI: ' + state.sets[teamIndex];
-    el.setAttribute('aria-label',`Punto a ${team.name}, punteggio ${state.points[teamIndex]}`);
+    el.querySelector('.sets').textContent=String(state.sets[teamIndex]);
+    el.setAttribute('aria-label',`Punto a ${team.name}, punteggio ${state.points[teamIndex]}, set vinti ${state.sets[teamIndex]}`);
     paintTimeouts(sideName);
   });
 
