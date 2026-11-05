@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VolleyScore KOALA – Volley Arena V17 | Offline</title>
+<title>VolleyScore KOALA – Volley Arena V18 | Offline</title>
 <style>
 :root{
   --bg:#03163c;
@@ -383,7 +383,7 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 }
 
 
-/* V17 — intermezzo Volley Arena, tutto locale e chiudibile con un tocco */
+/* V18 — intermezzo: 8 s di punteggio finale + 150 s di animazione Volley Arena, tutto locale e chiudibile con un tocco */
 #intermezzo[hidden]{display:none!important}
 #intermezzo{position:fixed;inset:0;z-index:40;overflow:hidden;isolation:isolate;cursor:pointer;
   background:radial-gradient(ellipse at 50% 80%,#2a5cbf88 0%,transparent 55%),linear-gradient(125deg,#041236,#123783 48%,#871e89 83%,#220f41);color:white;
@@ -537,15 +537,24 @@ const defaults=()=>({
   left:0,
   fifthSwapped:false,
   finished:false,
-  timeouts:[0,0],
+  timeouts:[[false,false],[false,false]],
   completedSets:[],
   awaitingNextSet:false
 });
+// Compatibilità con le vecchie versioni, che salvavano solo il conteggio 0/1/2.
+function normalizeTimeouts(value){
+  return [0,1].map(team=>{
+    const old=Array.isArray(value)?value[team]:0;
+    if(Array.isArray(old))return [!!old[0],!!old[1]];
+    const used=Math.max(0,Math.min(2,Number(old)||0));
+    return [used>=1,used>=2];
+  });
+}
 let state;
 try{
   const data=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem('volleyscore-koala-v12'));
   state=data&&Array.isArray(data.teams)&&Array.isArray(data.points)&&Array.isArray(data.sets)
-    ? {...defaults(),...data,timeouts:Array.isArray(data.timeouts)?data.timeouts:[0,0],completedSets:Array.isArray(data.completedSets)?data.completedSets:[],teams:(Array.isArray(data.teams)?data.teams:defaults().teams).map((t,i)=>({...defaults().teams[i],...t,koala:i===0?true:!!t.koala}))}
+    ? {...defaults(),...data,timeouts:normalizeTimeouts(data.timeouts),completedSets:Array.isArray(data.completedSets)?data.completedSets:[],teams:(Array.isArray(data.teams)?data.teams:defaults().teams).map((t,i)=>({...defaults().teams[i],...t,koala:i===0?true:!!t.koala}))}
     : defaults();
 }catch{state=defaults()}
 
@@ -624,11 +633,12 @@ function renderHistory(){
 }
 function paintTimeouts(sideName){
   const teamIndex=sideToTeamIndex(sideName);
-  const used=state.timeouts[teamIndex]||0;
+  const used=state.timeouts[teamIndex]||[false,false];
   document.querySelectorAll(`.timeout[data-side="${sideName}"]`).forEach((el,i)=>{
-    el.classList.toggle('used', i<used);
-    el.setAttribute('aria-label', `Timeout ${i+1} ${state.teams[teamIndex].name}: ${i<used?'usato':'disponibile'}`);
-    el.setAttribute('aria-pressed', i<used ? 'true' : 'false');
+    const taken=!!used[i];
+    el.classList.toggle('used', taken);
+    el.setAttribute('aria-label', `Timeout ${i+1} ${state.teams[teamIndex].name}: ${taken?'usato':'disponibile'}`);
+    el.setAttribute('aria-pressed', taken ? 'true' : 'false');
   });
 }
 
@@ -680,12 +690,14 @@ function snapshot(){
   if(history.length>250)history.shift();
 }
 
-function resetTimeouts(){ state.timeouts=[0,0]; }
+function resetTimeouts(){ state.timeouts=[[false,false],[false,false]]; }
 
 // L'animazione dura 150 s; non modifica stato né avanza il set.
 let arenaTicker=null;
 let arenaDeadline=0;
+let pendingArenaTimer=null;
 function closeArena(){
+  if(pendingArenaTimer!==null){clearTimeout(pendingArenaTimer);pendingArenaTimer=null;}
   $('intermezzo').hidden=true;
   if(arenaTicker!==null){clearInterval(arenaTicker);arenaTicker=null;}
 }
@@ -724,8 +736,14 @@ function completeSet(winnerIndex){
   }
   state.awaitingNextSet=true;
   clearMsg();
-  openArena();
-  document.dispatchEvent(new CustomEvent('koala-timeout-music',{detail:{action:'play'}}));
+  // Il risultato finale resta visibile per 8 secondi prima dell'intervallo.
+  closeArena();
+  pendingArenaTimer=setTimeout(()=>{
+    pendingArenaTimer=null;
+    if(!state.awaitingNextSet||state.finished)return;
+    openArena();
+    document.dispatchEvent(new CustomEvent('koala-timeout-music',{detail:{action:'play'}}));
+  },8000);
 }
 
 function point(teamIndex){
@@ -763,16 +781,16 @@ function announceTimeout(name){
 function toggleTimeoutForSide(sideName, slot){
   if(state.finished){msg('PARTITA TERMINATA'); return;}
   if(state.awaitingNextSet){msg('SET TERMINATO · PREMI PROSSIMO SET');return;}
+  const teamIndex=sideToTeamIndex(sideName);
+  // Ogni rettangolo corrisponde al proprio timeout: nessun ordine obbligato.
+  if(slot!==0&&slot!==1)return;
+  if(state.timeouts[teamIndex][slot])return;
   snapshot();
   clearMsg();
-  const teamIndex=sideToTeamIndex(sideName);
-  const current=state.timeouts[teamIndex]||0;
-  state.timeouts[teamIndex]=(slot < current) ? slot : slot+1;
+  state.timeouts[teamIndex][slot]=true;
   draw();
-  if(state.timeouts[teamIndex]>current){
-    announceTimeout(state.teams[teamIndex].name);
-    document.dispatchEvent(new CustomEvent('koala-timeout-music',{detail:{action:'play'}}));
-  }
+  announceTimeout(state.teams[teamIndex].name);
+  document.dispatchEvent(new CustomEvent('koala-timeout-music',{detail:{action:'play'}}));
 }
 
 $('nextSet').addEventListener('click',()=>{
