@@ -408,6 +408,12 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 @keyframes arenaSpin{to{transform:rotate(720deg)}}
 @media(prefers-reduced-motion:reduce){#intermezzo:before,.arena-ball,.arena-ball svg{animation:none}}
 
+
+/* V19: colore dei soli punti, indipendente dallo sfondo della squadra */
+.team .points, .team.koala-theme .points{
+  color:var(--points-color,#061b42);
+}
+
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -515,8 +521,10 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
     <h2>Personalizza le squadre</h2>
     <label>Nome squadra 1<input type="text" id="name0" maxlength="32" required></label>
     <label>Colore squadra 1<input type="color" id="color0"></label>
+    <label>Colore punti squadra 1<input type="color" id="pointsColor0"></label>
     <label>Nome squadra 2<input type="text" id="name1" maxlength="32" required></label>
     <label>Colore squadra 2<input type="color" id="color1"></label>
+    <label>Colore punti squadra 2<input type="color" id="pointsColor1"></label>
     <p class="hint">Timeout: 2 per squadra per ogni set. Le icone rosse indicano timeout già richiesti. Vengono azzerati automaticamente all'inizio del set successivo.</p>
     <div class="dialog-actions">
       <button value="cancel">ANNULLA</button>
@@ -530,7 +538,7 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 'use strict';
 const KEY='volleyscore-koala-v13';
 const defaults=()=>({
-  teams:[{name:'S.A. KOALA',color:'#ffd90a',koala:true},{name:'OSPITI',color:'#05dcff',koala:false}],
+  teams:[{name:'S.A. KOALA',color:'#ffd90a',pointsColor:'#ffec3d',koala:true},{name:'OSPITI',color:'#05dcff',pointsColor:'#061b42',koala:false}],
   points:[0,0],
   sets:[0,0],
   set:1,
@@ -664,6 +672,7 @@ function draw(){
     const teamIndex=sideToTeamIndex(sideName);
     const el=$(id), team=state.teams[teamIndex];
     el.style.setProperty('--team-color',team.color);
+    el.style.setProperty('--points-color',team.pointsColor || (team.koala ? '#ffec3d' : '#061b42'));
     el.classList.toggle('koala-theme', !!team.koala);
     el.closest('.team-column').classList.toggle('koala-column', !!team.koala);
     el.querySelector('.name').textContent=team.name;
@@ -845,7 +854,7 @@ $('new').addEventListener('click',()=>{
 $('showHistory').addEventListener('click',()=>{$('historyDialog').showModal()});
 $('closeHistory').addEventListener('click',()=>{$('historyDialog').close()});
 $('settings').addEventListener('click',()=>{
-  state.teams.forEach((t,i)=>{$('name'+i).value=t.name;$('color'+i).value=t.color});
+  state.teams.forEach((t,i)=>{$('name'+i).value=t.name;$('color'+i).value=t.color;$('pointsColor'+i).value=t.pointsColor || (t.koala ? '#ffec3d' : '#061b42')});
   $('config').showModal();
 });
 $('configForm').addEventListener('submit',e=>{
@@ -854,6 +863,7 @@ $('configForm').addEventListener('submit',e=>{
     ...t,
     name:i===0 ? (($('name'+i).value.trim()||t.name).toUpperCase()) : (($('name'+i).value.trim()||t.name).toUpperCase()),
     color:$('color'+i).value,
+    pointsColor:$('pointsColor'+i).value,
     koala:i===0 ? true : !!t.koala
   }));
   clearMsg();
