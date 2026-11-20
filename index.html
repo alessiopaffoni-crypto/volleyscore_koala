@@ -480,6 +480,54 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
  .pre-countdown{font-size:clamp(30px,4.5vw,65px)}.pre-countdown-panel{padding:6px 12px}
  .pre-schedule{margin-top:3px}.pre-schedule input{font-size:15px;padding:4px 7px}
  .pre-schedule button{padding:5px 9px}}
+
+/* V31: countdown leggibile dalla tribuna; orologio volutamente secondario. */
+#preMatch{gap:clamp(6px,1.1vh,16px)}
+.pre-brand{font-size:clamp(13px,1.35vw,20px)}
+.pre-heading{font-size:clamp(28px,4.3vw,67px);margin:2px 0}
+.pre-sub{font-size:clamp(12px,1.25vw,19px)}
+.pre-clock-line{display:flex;justify-content:center;align-items:center;gap:12px;opacity:.77;
+ font-size:clamp(12px,1.12vw,17px);font-weight:700}
+.pre-time{font-size:clamp(13px,1.4vw,21px);font-weight:800;text-shadow:none;line-height:1.2}
+.pre-date{font-size:clamp(12px,1.15vw,17px);font-weight:600;margin-top:0}
+.pre-countdown-panel{width:min(1300px,100%);border:3px solid #ffe23eb5;
+ padding:clamp(12px,2.7vh,32px) clamp(14px,2.2vw,32px);
+ background:#061638ef;box-shadow:0 10px 45px #0009,0 0 32px #ffe23e28}
+.pre-countdown-label{font-size:clamp(19px,2.15vw,34px);letter-spacing:.09em}
+.pre-countdown{font-size:clamp(76px,12.4vw,200px);letter-spacing:-.035em;
+ line-height:1.08;font-weight:1000;white-space:nowrap}
+.pre-countdown.ready{color:#fff;font-size:clamp(76px,12.4vw,200px)}
+#preReadyMessage{min-height:1.3em;font-weight:1000;line-height:1.05;
+ font-size:clamp(28px,4.25vw,68px);color:#ffe23e;
+ text-shadow:0 0 25px #ffe23e88,0 5px 22px #000;
+ letter-spacing:.025em}
+#preReadyMessage[hidden]{display:block!important;visibility:hidden}
+#preReadyMessage:not([hidden]){animation:koalaReadyPulse 1.5s ease-in-out infinite alternate}
+@keyframes koalaReadyPulse{from{filter:brightness(1)}to{filter:brightness(1.35)}}
+.pre-countdown-hint{font-size:clamp(12px,1.15vw,17px);margin-top:5px}
+.pre-matchup{width:min(1400px,100%)}
+.pre-team{min-height:clamp(105px,20vh,220px);font-size:clamp(27px,4.4vw,75px)}
+.pre-versus{font-size:clamp(26px,3.5vw,54px)}
+.pre-tip{font-size:clamp(12px,1.1vw,16px)}
+@media(max-height:760px) and (orientation:landscape){
+ #preMatch{padding-top:7px;padding-bottom:7px;gap:4px}
+ .pre-heading{font-size:clamp(23px,3.35vw,50px)}
+ .pre-countdown-panel{padding:5px 16px}
+ .pre-countdown{font-size:clamp(62px,9.2vw,125px)}
+ .pre-countdown.ready{font-size:clamp(62px,9.2vw,125px)}
+ #preReadyMessage{font-size:clamp(27px,3.6vw,49px)}
+ .pre-countdown-label{font-size:clamp(16px,1.6vw,25px)}
+ .pre-team{min-height:clamp(70px,15vh,125px);font-size:clamp(25px,3.35vw,52px);padding:9px}
+ .pre-controls button{padding:8px 18px;font-size:clamp(14px,1.35vw,20px)}
+ .pre-schedule{font-size:14px;margin-top:2px}
+ .pre-countdown-hint,.pre-tip{display:none}
+}
+@media(max-width:680px) and (orientation:portrait){
+ .pre-countdown{font-size:clamp(43px,10.5vw,76px)}
+ .pre-countdown.ready{font-size:clamp(43px,10.5vw,76px)}
+ #preReadyMessage{font-size:clamp(27px,6.2vw,43px)}
+ .pre-clock-line{flex-direction:column;gap:1px}
+}
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -499,11 +547,12 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
   <div><div class="pre-brand">🏐 VOLLEYBALL • MATCHDAY</div>
     <div class="pre-heading">VOLLEYSCORE KOALA</div>
     <div class="pre-sub">IN ATTESA DELLA PARTITA</div></div>
-  <div><div class="pre-time" id="preTime">--:--:--</div>
-    <div class="pre-date" id="preDate">Data della partita</div></div>
+  <div class="pre-clock-line" aria-label="Data e ora attuali"><span class="pre-date" id="preDate">Data della partita</span>
+    <span class="pre-time" id="preTime">--:--:--</span></div>
   <div class="pre-countdown-panel" aria-live="off">
     <div class="pre-countdown-label" id="preCountdownLabel">CONTO ALLA ROVESCIA ALLA PARTITA</div>
     <div class="pre-countdown" id="preCountdown" role="timer" aria-live="off">--:--:--</div>
+    <div id="preReadyMessage" hidden>È ORA DI GIOCARE!</div>
     <div class="pre-schedule"><label for="preKickoffTime">ORARIO DELLA PARTITA</label>
       <input id="preKickoffTime" type="time" step="60" aria-label="Orario di inizio partita">
       <button id="preSaveKickoff" type="button">IMPOSTA ORARIO</button>
@@ -1111,6 +1160,7 @@ function refreshPreMatch(){
   });
   const timer=$('preCountdown');
   timer.classList.remove('ready');
+  $('preReadyMessage').hidden=true;
   if(kickoff===null){
     timer.textContent='--:--:--';
     $('preCountdownLabel').textContent='CONTO ALLA ROVESCIA ALLA PARTITA';
@@ -1118,17 +1168,17 @@ function refreshPreMatch(){
     return;
   }
   const remaining=Math.max(0,Math.ceil((kickoff-Date.now())/1000));
+  const hours=Math.floor(remaining/3600),minutes=Math.floor((remaining%3600)/60),seconds=remaining%60;
+  timer.textContent=`${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
+  $('preReadyMessage').hidden=remaining>180;
   if(remaining===0){
-    timer.textContent='È ORA DI GIOCARE!';
     timer.classList.add('ready');
-    $('preCountdownLabel').textContent='IL MATCH PUÒ COMINCIARE';
+    $('preCountdownLabel').textContent='PARTITA PRONTA A INIZIARE';
     $('preKickoffHint').textContent='Premi INIZIA GARA quando le squadre sono pronte.';
   }else{
-    const h=Math.floor(remaining/3600),m=Math.floor((remaining%3600)/60),sec=remaining%60;
-    timer.textContent=`${pad2(h)}:${pad2(m)}:${pad2(sec)}`;
     $('preCountdownLabel').textContent='MANCANO ALLA PARTITA';
     const timeLabel=new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(new Date(kickoff));
-    $('preKickoffHint').textContent=`Inizio previsto oggi alle ${timeLabel} · Puoi modificare l'orario.`;
+    $('preKickoffHint').textContent=`Inizio previsto alle ${timeLabel} · Puoi modificare l'orario.`;
   }
 }
 function showPreMatch(){
