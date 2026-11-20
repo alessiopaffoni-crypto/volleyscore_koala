@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VolleyScore KOALA V29 — Nuovo intervallo animato</title>
+<title>VolleyScore KOALA V30 V29 — Nuovo intervallo animato</title>
 <style>
 :root{
   --bg:#03163c;
@@ -456,6 +456,30 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
 .pre-tip{font-size:clamp(11px,1vw,15px);color:#dae4ff}
 @media(max-width:680px){#preMatch{justify-content:space-around}.pre-matchup{grid-template-columns:1fr;gap:5px}
  .pre-team{min-height:100px;font-size:clamp(25px,7vw,45px)}.pre-versus{font-size:19px}}
+
+/* V30: countdown prepartita, completamente locale e persistente. */
+.pre-countdown-panel{width:min(820px,100%);border:2px solid #ffe23e88;border-radius:20px;
+ background:#06183bdc;padding:clamp(10px,1.5vh,20px) clamp(12px,2vw,26px);
+ box-shadow:0 10px 35px #0007;box-sizing:border-box}
+.pre-countdown-label{font-weight:950;letter-spacing:.11em;color:#ffe23e;
+ font-size:clamp(13px,1.25vw,19px)}
+.pre-countdown{font-weight:1000;line-height:1.1;letter-spacing:.025em;
+ font-size:clamp(42px,6.5vw,93px);font-variant-numeric:tabular-nums;
+ text-shadow:0 5px 24px #0008}
+.pre-countdown.ready{color:#ffe23e;font-size:clamp(25px,4vw,57px)}
+.pre-schedule{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+ gap:9px;margin-top:9px;font-size:clamp(12px,1.5vw,18px);font-weight:750}
+.pre-schedule input{color:#07183c;background:white;border:2px solid #ffe23e;
+ border-radius:9px;padding:7px 10px;font-weight:900;font-size:18px;max-width:190px}
+.pre-schedule button{border-radius:9px;border:1px solid #ffffff88;background:#294575;color:white;
+ padding:8px 13px;cursor:pointer;font-size:14px;font-weight:850}
+.pre-countdown-hint{color:#e1e9fa;font-size:clamp(11px,.95vw,14px);margin-top:7px}
+@media(max-height:710px) and (orientation:landscape){#preMatch{gap:7px;padding-top:8px;padding-bottom:8px}
+ .pre-team{min-height:clamp(75px,19vh,180px)}.pre-time{font-size:clamp(24px,3.6vw,58px)}
+ .pre-heading{font-size:clamp(27px,4vw,64px)}
+ .pre-countdown{font-size:clamp(30px,4.5vw,65px)}.pre-countdown-panel{padding:6px 12px}
+ .pre-schedule{margin-top:3px}.pre-schedule input{font-size:15px;padding:4px 7px}
+ .pre-schedule button{padding:5px 9px}}
 </style>
 
 <link rel="manifest" href="./manifest.webmanifest">
@@ -477,6 +501,16 @@ footer button{padding:5px 9px;font-size:clamp(12px,1.12vw,20px)}
     <div class="pre-sub">IN ATTESA DELLA PARTITA</div></div>
   <div><div class="pre-time" id="preTime">--:--:--</div>
     <div class="pre-date" id="preDate">Data della partita</div></div>
+  <div class="pre-countdown-panel" aria-live="off">
+    <div class="pre-countdown-label" id="preCountdownLabel">CONTO ALLA ROVESCIA ALLA PARTITA</div>
+    <div class="pre-countdown" id="preCountdown" role="timer" aria-live="off">--:--:--</div>
+    <div class="pre-schedule"><label for="preKickoffTime">ORARIO DELLA PARTITA</label>
+      <input id="preKickoffTime" type="time" step="60" aria-label="Orario di inizio partita">
+      <button id="preSaveKickoff" type="button">IMPOSTA ORARIO</button>
+      <button id="preClearKickoff" type="button">TOGLI COUNTDOWN</button>
+    </div>
+    <div class="pre-countdown-hint" id="preKickoffHint">Imposta l'orario di oggi per avviare il countdown.</div>
+  </div>
   <div class="pre-matchup"><div class="pre-team" id="preTeam0">S.A. KOALA</div>
     <div class="pre-versus">VS</div><div class="pre-team" id="preTeam1">OSPITI</div></div>
   <div><div class="pre-controls"><button type="button" id="preCustomize">⚙ SQUADRE E COLORI</button>
@@ -996,6 +1030,9 @@ $('new').addEventListener('click',()=>{
     history.length=0;
     clearMsg();
     draw();
+    kickoff=null;
+    try{localStorage.removeItem(kickoffKey)}catch{}
+    $('preKickoffTime').value='';
     showPreMatch();
   }
 });
@@ -1051,7 +1088,14 @@ document.addEventListener('click',e=>{
 window.addEventListener('resize',()=>requestAnimationFrame(()=>{fitAllNames();fitPointNumbers()}));
 draw();
 
-// V27: orologio e schermata prepartita, senza alterare il motore V26.
+// V30: schermata di attesa con countdown, salvato separatamente dai punteggi.
+const kickoffKey='volleyscore-koala-kickoff-v30';
+let kickoff=null;
+try{
+  const stored=JSON.parse(localStorage.getItem(kickoffKey)||'null');
+  if(stored && typeof stored.timestamp==='number' && Number.isFinite(stored.timestamp))kickoff=stored.timestamp;
+}catch{}
+const pad2=n=>String(n).padStart(2,'0');
 function refreshPreMatch(){
   const now=new Date();
   $('preTime').textContent=new Intl.DateTimeFormat('it-IT',
@@ -1065,8 +1109,54 @@ function refreshPreMatch(){
       ? `linear-gradient(125deg,${team.color},${team.colorEnd||team.color})` : team.color;
     el.style.color=team.pointsColor || '#ffffff';
   });
+  const timer=$('preCountdown');
+  timer.classList.remove('ready');
+  if(kickoff===null){
+    timer.textContent='--:--:--';
+    $('preCountdownLabel').textContent='CONTO ALLA ROVESCIA ALLA PARTITA';
+    $('preKickoffHint').textContent="Imposta l'orario di oggi per avviare il countdown.";
+    return;
+  }
+  const remaining=Math.max(0,Math.ceil((kickoff-Date.now())/1000));
+  if(remaining===0){
+    timer.textContent='È ORA DI GIOCARE!';
+    timer.classList.add('ready');
+    $('preCountdownLabel').textContent='IL MATCH PUÒ COMINCIARE';
+    $('preKickoffHint').textContent='Premi INIZIA GARA quando le squadre sono pronte.';
+  }else{
+    const h=Math.floor(remaining/3600),m=Math.floor((remaining%3600)/60),sec=remaining%60;
+    timer.textContent=`${pad2(h)}:${pad2(m)}:${pad2(sec)}`;
+    $('preCountdownLabel').textContent='MANCANO ALLA PARTITA';
+    const timeLabel=new Intl.DateTimeFormat('it-IT',{hour:'2-digit',minute:'2-digit'}).format(new Date(kickoff));
+    $('preKickoffHint').textContent=`Inizio previsto oggi alle ${timeLabel} · Puoi modificare l'orario.`;
+  }
 }
-function showPreMatch(){refreshPreMatch();$('preMatch').hidden=false;}
+function showPreMatch(){
+  refreshPreMatch();
+  $('preMatch').hidden=false;
+}
+$('preSaveKickoff').addEventListener('click',()=>{
+  const value=$('preKickoffTime').value;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)){
+    $('preKickoffHint').textContent='Seleziona prima un orario valido.';
+    $('preKickoffTime').focus();return;
+  }
+  const [h,m]=value.split(':').map(Number);
+  const target=new Date();target.setHours(h,m,0,0);
+  kickoff=target.getTime();
+  try{localStorage.setItem(kickoffKey,JSON.stringify({timestamp:kickoff}))}catch{}
+  refreshPreMatch();
+});
+$('preClearKickoff').addEventListener('click',()=>{
+  kickoff=null;
+  try{localStorage.removeItem(kickoffKey)}catch{}
+  $('preKickoffTime').value='';
+  refreshPreMatch();
+});
+if(kickoff!==null){
+  const t=new Date(kickoff);
+  $('preKickoffTime').value=`${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
+}
 $('preStart').addEventListener('click',()=>{$('preMatch').hidden=true;});
 $('preCustomize').addEventListener('click',()=>$('settings').click());
 $('config').addEventListener('close',refreshPreMatch);
